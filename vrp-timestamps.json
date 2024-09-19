@@ -1,0 +1,556 @@
+{
+  "problem": {
+    "description": {
+      "shift_teams": [
+        {
+          "id": "3991898",
+          "depot_location_id": "318684",
+          "available_time_window": {
+            "start_timestamp_sec": "1726664400",
+            "end_timestamp_sec": "1726700400"
+          },
+          "attributes": [
+            {
+              "id": "license:pediatric"
+            },
+            {
+              "id": "service_name:Acute"
+            },
+            {
+              "id": "presentation_modality:in_person"
+            },
+            {
+              "id": "assignment_type:auto-assignable"
+            },
+            {
+              "id": "state_license:KS"
+            },
+            {
+              "id": "state_license:WA"
+            },
+            {
+              "id": "state_license:MO"
+            },
+            {
+              "id": "insurance:Medicaid/Kansas City"
+            },
+            {
+              "id": "service_name:Bridge"
+            },
+            {
+              "id": "shift_type:acute_care"
+            },
+            {
+              "id": "shift_team:285889"
+            }
+          ],
+          "route_history": {
+            "current_position": {
+              "location_id": "284881518",
+              "known_timestamp_sec": "1726685998"
+            },
+            "stops": [
+              {
+                "visit": {
+                  "visit_id": "29819958",
+                  "arrival_timestamp_sec": "1726667537"
+                },
+                "pinned": true,
+                "actual_start_timestamp_sec": "1726667537",
+                "actual_completion_timestamp_sec": "1726669376"
+              },
+              {
+                "visit": {
+                  "visit_id": "29824406",
+                  "arrival_timestamp_sec": "1726670936"
+                },
+                "pinned": true,
+                "actual_start_timestamp_sec": "1726670936",
+                "actual_completion_timestamp_sec": "1726674827"
+              },
+              {
+                "visit": {
+                  "visit_id": "29828304",
+                  "arrival_timestamp_sec": "1726676809"
+                },
+                "pinned": true,
+                "actual_start_timestamp_sec": "1726676809",
+                "actual_completion_timestamp_sec": "1726678875"
+              },
+              {
+                "visit": {
+                  "visit_id": "29832762",
+                  "arrival_timestamp_sec": "1726681479"
+                },
+                "pinned": true,
+                "actual_start_timestamp_sec": "1726681479",
+                "actual_completion_timestamp_sec": "1726683605"
+              },
+              {
+                "rest_break": {
+                  "rest_break_id": "64439",
+                  "start_timestamp_sec": "1726684035"
+                },
+                "pinned": true,
+                "actual_start_timestamp_sec": "1726684035",
+                "actual_completion_timestamp_sec": "1726685835"
+              },
+              {
+                "visit": {
+                  "visit_id": "29835280"
+                },
+                "pinned": true
+              }
+            ]
+          },
+          "upcoming_commitments": {},
+          "num_dhmt_members": 1,
+          "num_app_members": 1
+        }
+      ],
+      "visits": [
+        {
+          "id": "29835280",
+          "location_id": "273250435",
+          "arrival_time_window": {
+            "start_timestamp_sec": "1726671600",
+            "end_timestamp_sec": "1726686000"
+          },
+          "extra_setup_duration_sec": "600",
+          "service_duration_sec": "2640",
+          "required_attributes": [
+            {
+              "id": "state_license:KS"
+            },
+            {
+              "id": "service_name:Acute"
+            },
+            {
+              "id": "assignment_type:auto-assignable"
+            }
+          ],
+          "forbidden_attributes": [
+            {
+              "id": "presentation_modality:virtual"
+            }
+          ],
+          "acuity": {
+            "level": "2"
+          },
+          "priority": {
+            "unassigned_priority_level": 1
+          },
+          "value": {
+            "completion_value_cents": "0",
+            "partner_priority_score": "0"
+          }
+        },
+        {
+          "id": "29819958",
+          "location_id": "284683612",
+          "arrival_time_window": {
+            "start_timestamp_sec": "1726664400",
+            "end_timestamp_sec": "1726678800"
+          },
+          "extra_setup_duration_sec": "600",
+          "service_duration_sec": "2100",
+          "required_attributes": [
+            {
+              "id": "state_license:KS"
+            },
+            {
+              "id": "service_name:Acute"
+            },
+            {
+              "id": "assignment_type:auto-assignable"
+            }
+          ],
+          "acuity": {
+            "level": "1"
+          },
+          "value": {
+            "completion_value_cents": "0",
+            "partner_priority_score": "0"
+          }
+        },
+        {
+          "id": "29824406",
+          "location_id": "284697535",
+          "arrival_time_window": {
+            "start_timestamp_sec": "1726664400",
+            "end_timestamp_sec": "1726678800"
+          },
+          "extra_setup_duration_sec": "600",
+          "service_duration_sec": "3300",
+          "required_attributes": [
+            {
+              "id": "state_license:KS"
+            },
+            {
+              "id": "service_name:Acute"
+            },
+            {
+              "id": "assignment_type:auto-assignable"
+            }
+          ],
+          "forbidden_attributes": [
+            {
+              "id": "presentation_modality:virtual"
+            }
+          ],
+          "acuity": {
+            "level": "2"
+          },
+          "value": {
+            "completion_value_cents": "26609",
+            "partner_priority_score": "10"
+          }
+        },
+        {
+          "id": "29832762",
+          "location_id": "284701653",
+          "arrival_time_window": {
+            "start_timestamp_sec": "1726668000",
+            "end_timestamp_sec": "1726682400"
+          },
+          "extra_setup_duration_sec": "600",
+          "service_duration_sec": "2700",
+          "required_attributes": [
+            {
+              "id": "state_license:KS"
+            },
+            {
+              "id": "service_name:Acute"
+            },
+            {
+              "id": "assignment_type:auto-assignable"
+            }
+          ],
+          "forbidden_attributes": [
+            {
+              "id": "presentation_modality:virtual"
+            }
+          ],
+          "acuity": {
+            "level": "2"
+          },
+          "priority": {
+            "unassigned_priority_level": 1
+          },
+          "value": {
+            "completion_value_cents": "70907",
+            "partner_priority_score": "4645"
+          }
+        },
+        {
+          "id": "29826981",
+          "location_id": "284542459",
+          "arrival_time_window": {
+            "start_timestamp_sec": "1726678800",
+            "end_timestamp_sec": "1726700400"
+          },
+          "extra_setup_duration_sec": "600",
+          "service_duration_sec": "2400",
+          "required_attributes": [
+            {
+              "id": "state_license:KS"
+            },
+            {
+              "id": "service_name:Acute"
+            },
+            {
+              "id": "assignment_type:auto-assignable"
+            }
+          ],
+          "acuity": {
+            "level": "2"
+          },
+          "priority": {
+            "unassigned_priority_level": 1
+          },
+          "value": {
+            "completion_value_cents": "85307",
+            "partner_priority_score": "4645"
+          }
+        },
+        {
+          "id": "29828304",
+          "location_id": "284802291",
+          "arrival_time_window": {
+            "start_timestamp_sec": "1726664400",
+            "end_timestamp_sec": "1726678800"
+          },
+          "extra_setup_duration_sec": "600",
+          "service_duration_sec": "2640",
+          "required_attributes": [
+            {
+              "id": "state_license:KS"
+            },
+            {
+              "id": "service_name:Acute"
+            },
+            {
+              "id": "assignment_type:auto-assignable"
+            }
+          ],
+          "forbidden_attributes": [
+            {
+              "id": "presentation_modality:in_person"
+            },
+            {
+              "id": "presentation_modality:virtual"
+            }
+          ],
+          "acuity": {
+            "level": "3"
+          },
+          "value": {
+            "completion_value_cents": "0",
+            "partner_priority_score": "0"
+          }
+        },
+        {
+          "id": "29823625",
+          "location_id": "284834993",
+          "arrival_time_window": {
+            "start_timestamp_sec": "1726675200",
+            "end_timestamp_sec": "1726689600"
+          },
+          "extra_setup_duration_sec": "600",
+          "service_duration_sec": "3060",
+          "required_attributes": [
+            {
+              "id": "state_license:KS"
+            },
+            {
+              "id": "service_name:Acute"
+            },
+            {
+              "id": "assignment_type:auto-assignable"
+            }
+          ],
+          "forbidden_attributes": [
+            {
+              "id": "presentation_modality:virtual"
+            }
+          ],
+          "acuity": {
+            "level": "3"
+          },
+          "value": {
+            "completion_value_cents": "85307",
+            "partner_priority_score": "4645"
+          }
+        }
+      ],
+      "locations": [
+        {
+          "id": "318684",
+          "latitude_e6": 38997585,
+          "longitude_e6": -94667237
+        },
+        {
+          "id": "273250435",
+          "latitude_e6": 39016359,
+          "longitude_e6": -94704165
+        },
+        {
+          "id": "284542459",
+          "latitude_e6": 38817093,
+          "longitude_e6": -94930685
+        },
+        {
+          "id": "284683612",
+          "latitude_e6": 39118145,
+          "longitude_e6": -94754862
+        },
+        {
+          "id": "284697535",
+          "latitude_e6": 39122676,
+          "longitude_e6": -94765129
+        },
+        {
+          "id": "284701653",
+          "latitude_e6": 39025030,
+          "longitude_e6": -94654899
+        },
+        {
+          "id": "284802291",
+          "latitude_e6": 39129551,
+          "longitude_e6": -94652722
+        },
+        {
+          "id": "284834993",
+          "latitude_e6": 39013836,
+          "longitude_e6": -94770542
+        },
+        {
+          "id": "284881518",
+          "latitude_e6": 39022590,
+          "longitude_e6": -94647901
+        }
+      ],
+      "rest_breaks": [
+        {
+          "id": "64439",
+          "shift_team_id": "3991898",
+          "duration_sec": "1800",
+          "unrequested": false,
+          "location_id": "284881518",
+          "start_timestamp_sec": "1726684035"
+        }
+      ],
+      "distance_matrix": {
+        "distances": [
+          {
+            "from_location_id": "318684",
+            "to_location_id": "318684",
+            "length_meters": "0",
+            "duration_sec": "0"
+          },
+          {
+            "from_location_id": "318684",
+            "to_location_id": "284683612",
+            "length_meters": "19876",
+            "duration_sec": "1077"
+          },
+          {
+            "from_location_id": "273250435",
+            "to_location_id": "318684",
+            "length_meters": "5322",
+            "duration_sec": "400"
+          },
+          {
+            "from_location_id": "273250435",
+            "to_location_id": "284542459",
+            "length_meters": "35210",
+            "duration_sec": "1849"
+          },
+          {
+            "from_location_id": "273250435",
+            "to_location_id": "284834993",
+            "length_meters": "6955",
+            "duration_sec": "486"
+          },
+          {
+            "from_location_id": "284542459",
+            "to_location_id": "318684",
+            "length_meters": "35826",
+            "duration_sec": "2047"
+          },
+          {
+            "from_location_id": "284542459",
+            "to_location_id": "284542459",
+            "length_meters": "0",
+            "duration_sec": "0"
+          },
+          {
+            "from_location_id": "284542459",
+            "to_location_id": "284834993",
+            "length_meters": "37260",
+            "duration_sec": "1963"
+          },
+          {
+            "from_location_id": "284683612",
+            "to_location_id": "284697535",
+            "length_meters": "1766",
+            "duration_sec": "208"
+          },
+          {
+            "from_location_id": "284697535",
+            "to_location_id": "284802291",
+            "length_meters": "11342",
+            "duration_sec": "763"
+          },
+          {
+            "from_location_id": "284701653",
+            "to_location_id": "284881518",
+            "length_meters": "934",
+            "duration_sec": "117"
+          },
+          {
+            "from_location_id": "284802291",
+            "to_location_id": "284701653",
+            "length_meters": "12832",
+            "duration_sec": "900"
+          },
+          {
+            "from_location_id": "284834993",
+            "to_location_id": "318684",
+            "length_meters": "11088",
+            "duration_sec": "827"
+          },
+          {
+            "from_location_id": "284834993",
+            "to_location_id": "284542459",
+            "length_meters": "36165",
+            "duration_sec": "1913"
+          },
+          {
+            "from_location_id": "284834993",
+            "to_location_id": "284834993",
+            "length_meters": "0",
+            "duration_sec": "0"
+          },
+          {
+            "from_location_id": "284881518",
+            "to_location_id": "273250435",
+            "length_meters": "5885",
+            "duration_sec": "418"
+          },
+          {
+            "from_location_id": "284881518",
+            "to_location_id": "284881518",
+            "length_meters": "0",
+            "duration_sec": "0"
+          }
+        ]
+      },
+      "current_timestamp_sec": "1726686821"
+    }
+  },
+  "config": {
+    "termination_duration_ms": "1000",
+    "termination_type": "TERMINATION_TYPE_BEST_FOR_TIME",
+    "include_intermediate_solutions": false,
+    "app_hourly_cost_usd_cents": "8700",
+    "dhmt_hourly_cost_usd_cents": "2500",
+    "constraint_config": {
+      "work_distribution": {
+        "exponential_policy": {
+          "base_numerator": 2,
+          "base_denominator": 1
+        }
+      },
+      "opportunity_cost": {
+        "linear_on_scene_cost": {
+          "scaling_factor": 2
+        },
+        "linear_foregone_visit_value": {
+          "cents_per_minute": 74
+        }
+      },
+      "late_arrival": {
+        "linear_offset_policy": {
+          "lateness_cost_usd_mills_per_ms": 0.0835,
+          "offset_prior_to_time_window_end_ms": "3600000"
+        },
+        "hard_lateness_threshold_ms": "7200000"
+      },
+      "clinical_urgency": {
+        "linear_offset_policy": {
+          "lateness_cost_usd_mills_per_ms": 0.0833,
+          "offset_prior_to_urgency_window_end_ms": "3600000"
+        },
+        "higher_level_value_wins": true
+      },
+      "depot_late_arrival": {
+        "linear_offset_policy": {
+          "lateness_cost_usd_mills_per_ms": 0.0833,
+          "offset_prior_to_depot_due_time_ms": "3600000"
+        },
+        "hard_lateness_threshold_ms": "1800000"
+      }
+    }
+  }
+}

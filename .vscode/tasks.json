@@ -1,0 +1,5 @@
+{
+  "watch": ["*.go"],
+  "ext": "go",
+  "exec": "go build -o debug_bin . && dlv --listen=:2345 --headless=true --api-version=2 --accept-multiclient exec ./debug_bin"
+}
