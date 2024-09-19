@@ -67,7 +67,7 @@ type Stop struct {
 
 func main() {
 	// Read the JSON file
-	data, err := ioutil.ReadFile("vrp.json")
+	data, err := ioutil.ReadFile("vrp_snapshot.json")
 	if err != nil {
 		log.Fatalf("Error reading file: %v", err)
 	}
