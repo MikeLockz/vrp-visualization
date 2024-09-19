@@ -1,10 +1,10 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
-	"os"
+	"sort"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -53,78 +53,112 @@ type RestBreak struct {
 	StartTimestampSec  string `json:"start_timestamp_sec"`
 }
 
-func convertTimestamp(timestamp string) string {
+func convertTimestamp(timestamp string) time.Time {
 	i, err := strconv.ParseInt(timestamp, 10, 64)
 	if err != nil {
-		return "Invalid Timestamp"
+		return time.Time{}
 	}
 	t := time.Unix(i, 0)
 	
-	// Load the Mountain Time location
 	mountainTime, err := time.LoadLocation("America/Denver")
 	if err != nil {
-		return "Error loading timezone"
+		return time.Time{}
 	}
 	
-	// Convert to Mountain Time
-	t = t.In(mountainTime)
-	
-	// Format as HH:mm:ss
+	return t.In(mountainTime)
+}
+
+func formatTime(t time.Time) string {
 	return t.Format("15:04:05")
 }
 
+func generateTimeline(stops []Stop) string {
+	if len(stops) == 0 {
+		return "No stops in the timeline."
+	}
+
+	// Sort stops by start time
+	sort.Slice(stops, func(i, j int) bool {
+		timeI := getStopTime(stops[i])
+		timeJ := getStopTime(stops[j])
+		return timeI.Before(timeJ)
+	})
+
+	startTime := getStopTime(stops[0])
+	endTime := getStopTime(stops[len(stops)-1])
+	duration := endTime.Sub(startTime)
+
+	timelineWidth := 80
+	var timeline strings.Builder
+
+	for _, stop := range stops {
+		stopTime := getStopTime(stop)
+		relativePosition := float64(stopTime.Sub(startTime)) / float64(duration)
+		position := int(relativePosition * float64(timelineWidth))
+
+		timeline.WriteString(fmt.Sprintf("%s%s\n", strings.Repeat(" ", position), getStopMarker(stop)))
+		timeline.WriteString(fmt.Sprintf("%s|\n", strings.Repeat(" ", position)))
+	}
+
+	// Add time labels
+	timeline.WriteString(fmt.Sprintf("%-*s%s\n", timelineWidth, formatTime(startTime), formatTime(endTime)))
+
+	return timeline.String()
+}
+
+func getStopTime(stop Stop) time.Time {
+	if stop.Visit != nil && stop.Visit.ArrivalTimestampSec != "" {
+		return convertTimestamp(stop.Visit.ArrivalTimestampSec)
+	} else if stop.RestBreak != nil {
+		return convertTimestamp(stop.RestBreak.StartTimestampSec)
+	}
+	return time.Time{}
+}
+
+func getStopMarker(stop Stop) string {
+	if stop.Visit != nil {
+		return fmt.Sprintf("V%s", stop.Visit.VisitID)
+	} else if stop.RestBreak != nil {
+		return fmt.Sprintf("B%s", stop.RestBreak.RestBreakID)
+	}
+	return "?"
+}
+
 func main() {
-	// Open the JSON file
-	file, err := os.Open("vrp_problem.json")
-	if err != nil {
-		fmt.Println("Error opening file:", err)
-		return
-	}
-	defer file.Close()
+	// ... (file opening and JSON decoding remain the same)
 
-	// Create a decoder
-	decoder := json.NewDecoder(file)
-
-	// Create a VRP struct to hold the data
-	var vrp VRP
-
-	// Decode the JSON data
-	err = decoder.Decode(&vrp)
-	if err != nil {
-		fmt.Println("Error decoding JSON:", err)
-		return
-	}
-
-	// Print details for all shift teams
 	for _, team := range vrp.Problem.Description.ShiftTeams {
 		fmt.Printf("Shift Team ID: %s\n", team.ID)
 		fmt.Printf("Depot Location ID: %s\n", team.DepotLocationID)
 		fmt.Printf("Available Time Window: %s - %s\n",
-			convertTimestamp(team.AvailableTimeWindow.StartTimestampSec),
-			convertTimestamp(team.AvailableTimeWindow.EndTimestampSec))
+			formatTime(convertTimestamp(team.AvailableTimeWindow.StartTimestampSec)),
+			formatTime(convertTimestamp(team.AvailableTimeWindow.EndTimestampSec)))
 		
 		fmt.Printf("Current Position: Location ID %s, Known Time %s\n",
 			team.RouteHistory.CurrentPosition.LocationID,
-			convertTimestamp(team.RouteHistory.CurrentPosition.KnownTimestampSec))
+			formatTime(convertTimestamp(team.RouteHistory.CurrentPosition.KnownTimestampSec)))
 		
-		fmt.Println("Route History:")
+		fmt.Println("\nRoute History Timeline:")
+		fmt.Println(generateTimeline(team.RouteHistory.Stops))
+		
+		fmt.Println("\nDetailed Route History:")
 		for i, stop := range team.RouteHistory.Stops {
 			fmt.Printf("  Stop %d:\n", i+1)
 			if stop.Visit != nil {
 				fmt.Printf("    Visit ID: %s\n", stop.Visit.VisitID)
 				if stop.Visit.ArrivalTimestampSec != "" {
-					fmt.Printf("    Arrival Time: %s\n", convertTimestamp(stop.Visit.ArrivalTimestampSec))
+					fmt.Printf("    Arrival Time: %s\n", formatTime(convertTimestamp(stop.Visit.ArrivalTimestampSec)))
 				}
 			} else if stop.RestBreak != nil {
 				fmt.Printf("    Rest Break ID: %s\n", stop.RestBreak.RestBreakID)
-				fmt.Printf("    Start Time: %s\n", convertTimestamp(stop.RestBreak.StartTimestampSec))
+				fmt.Printf("    Start Time: %s\n", formatTime(convertTimestamp(stop.RestBreak.StartTimestampSec)))
 			}
 			fmt.Printf("    Pinned: %v\n", stop.Pinned)
 			if stop.ActualStartTimestampSec != "" {
-				fmt.Printf("    Actual Start: %s\n", convertTimestamp(stop.ActualStartTimestampSec))
+				fmt.Printf("    Actual Start: %s\n", formatTime(convertTimestamp(stop.ActualStartTimestampSec)))
 			}
 			if stop.ActualCompletionTimestampSec != "" {
-				fmt.Printf("    Actual Completion: %s\n", convertTimestamp(stop.ActualCompletionTimestampSec))
+				fmt.Printf("    Actual Completion: %s\n", formatTime(convertTimestamp(stop.ActualCompletionTimestampSec)))
 			}
 		}
 		
