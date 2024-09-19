@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"os"
 	"strconv"
 	"time"
 )
@@ -39,11 +40,11 @@ type Problem struct {
 				} `json:"arrival_time_window"`
 			} `json:"visits"`
 			RestBreaks []struct {
-				ID           string `json:"id"`
-				ShiftTeamID  string `json:"shift_team_id"`
-				DurationSec  string `json:"duration_sec"`
-				Unrequested  bool   `json:"unrequested"`
-				LocationID   string `json:"location_id"`
+				ID                string `json:"id"`
+				ShiftTeamID       string `json:"shift_team_id"`
+				DurationSec       string `json:"duration_sec"`
+				Unrequested       bool   `json:"unrequested"`
+				LocationID        string `json:"location_id"`
 				StartTimestampSec string `json:"start_timestamp_sec"`
 			} `json:"rest_breaks"`
 		} `json:"description"`
@@ -52,7 +53,7 @@ type Problem struct {
 
 func main() {
 	// Read the JSON file
-	data, err := ioutil.ReadFile("vrp.json")
+	data, err := ioutil.ReadFile("paste.txt")
 	if err != nil {
 		log.Fatalf("Error reading file: %v", err)
 	}
@@ -69,6 +70,13 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error loading Mountain Time zone: %v", err)
 	}
+
+	// Create output file
+	outputFile, err := os.Create("output.txt")
+	if err != nil {
+		log.Fatalf("Error creating output file: %v", err)
+	}
+	defer outputFile.Close()
 
 	// Create a map of visit IDs to their arrival time windows
 	visitWindows := make(map[string]struct {
@@ -103,38 +111,40 @@ func main() {
 
 	// Process each shift team
 	for _, team := range problem.Problem.Description.ShiftTeams {
-		fmt.Printf("Shift Team ID: %s\n", team.ID)
+		writeLine(outputFile, "Shift Team ID: %s", team.ID)
 		
-		// Print shift team start and end times
+		// Write shift team start and end times
 		shiftStart := formatTimestamp(team.AvailableTimeWindow.StartTimestampSec, mountainTime)
 		shiftEnd := formatTimestamp(team.AvailableTimeWindow.EndTimestampSec, mountainTime)
-		fmt.Printf("Shift Start Time: %s\n", shiftStart)
-		fmt.Printf("Shift End Time: %s\n", shiftEnd)
+		writeLine(outputFile, "Shift Start Time: %s", shiftStart)
+		writeLine(outputFile, "Shift End Time: %s", shiftEnd)
 		
 		for _, stop := range team.RouteHistory.Stops {
 			if stop.Visit.VisitID != "" {
-				fmt.Printf("  Visit ID: %s\n", stop.Visit.VisitID)
+				writeLine(outputFile, "  Visit ID: %s", stop.Visit.VisitID)
 				if window, exists := visitWindows[stop.Visit.VisitID]; exists {
-					fmt.Printf("    Arrival Window Start: %s\n", window.Start)
-					fmt.Printf("    Arrival Window End: %s\n", window.End)
+					writeLine(outputFile, "    Arrival Window Start: %s", window.Start)
+					writeLine(outputFile, "    Arrival Window End: %s", window.End)
 				}
 			} else if stop.RestBreak.RestBreakID != "" {
-				fmt.Printf("  Break ID: %s\n", stop.RestBreak.RestBreakID)
+				writeLine(outputFile, "  Break ID: %s", stop.RestBreak.RestBreakID)
 				if details, exists := breakDetails[stop.RestBreak.RestBreakID]; exists {
-					fmt.Printf("    Scheduled Start: %s\n", details.Start)
-					fmt.Printf("    Duration: %s\n", details.Duration)
+					writeLine(outputFile, "    Scheduled Start: %s", details.Start)
+					writeLine(outputFile, "    Duration: %s", details.Duration)
 				}
 			} else {
-				fmt.Printf("  Unknown Stop Type\n")
+				writeLine(outputFile, "  Unknown Stop Type")
 			}
 
 			startTime := formatTimestamp(stop.ActualStartTimestampSec, mountainTime)
 			endTime := formatTimestamp(stop.ActualCompletionTimestampSec, mountainTime)
-			fmt.Printf("    Actual Start Time: %s\n", startTime)
-			fmt.Printf("    Actual End Time: %s\n", endTime)
+			writeLine(outputFile, "    Actual Start Time: %s", startTime)
+			writeLine(outputFile, "    Actual End Time: %s", endTime)
 		}
-		fmt.Println()
+		writeLine(outputFile, "")
 	}
+
+	fmt.Println("Output has been written to output.txt")
 }
 
 func formatTimestamp(timestamp string, loc *time.Location) string {
@@ -156,4 +166,9 @@ func formatDuration(seconds int) string {
 	hours := int(duration.Hours())
 	minutes := int(duration.Minutes()) % 60
 	return fmt.Sprintf("%dh %dm", hours, minutes)
+}
+
+func writeLine(file *os.File, format string, a ...interface{}) {
+	line := fmt.Sprintf(format, a...)
+	file.WriteString(line + "\n")
 }
