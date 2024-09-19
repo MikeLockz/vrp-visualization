@@ -1,169 +1,159 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
-	"sort"
+	"io/ioutil"
+	"log"
 	"strconv"
-	"strings"
 	"time"
 )
 
-type VRP struct {
+type Problem struct {
 	Problem struct {
 		Description struct {
-			ShiftTeams []ShiftTeam `json:"shift_teams"`
+			ShiftTeams []struct {
+				ID                 string `json:"id"`
+				AvailableTimeWindow struct {
+					StartTimestampSec string `json:"start_timestamp_sec"`
+					EndTimestampSec   string `json:"end_timestamp_sec"`
+				} `json:"available_time_window"`
+				RouteHistory struct {
+					Stops []struct {
+						Visit struct {
+							VisitID string `json:"visit_id"`
+						} `json:"visit"`
+						RestBreak struct {
+							RestBreakID string `json:"rest_break_id"`
+						} `json:"rest_break"`
+						ActualStartTimestampSec      string `json:"actual_start_timestamp_sec"`
+						ActualCompletionTimestampSec string `json:"actual_completion_timestamp_sec"`
+					} `json:"stops"`
+				} `json:"route_history"`
+			} `json:"shift_teams"`
+			Visits []struct {
+				ID                string `json:"id"`
+				ArrivalTimeWindow struct {
+					StartTimestampSec string `json:"start_timestamp_sec"`
+					EndTimestampSec   string `json:"end_timestamp_sec"`
+				} `json:"arrival_time_window"`
+			} `json:"visits"`
+			RestBreaks []struct {
+				ID           string `json:"id"`
+				ShiftTeamID  string `json:"shift_team_id"`
+				DurationSec  string `json:"duration_sec"`
+				Unrequested  bool   `json:"unrequested"`
+				LocationID   string `json:"location_id"`
+				StartTimestampSec string `json:"start_timestamp_sec"`
+			} `json:"rest_breaks"`
 		} `json:"description"`
 	} `json:"problem"`
 }
 
-type ShiftTeam struct {
-	ID                  string `json:"id"`
-	DepotLocationID     string `json:"depot_location_id"`
-	AvailableTimeWindow struct {
-		StartTimestampSec string `json:"start_timestamp_sec"`
-		EndTimestampSec   string `json:"end_timestamp_sec"`
-	} `json:"available_time_window"`
-	RouteHistory struct {
-		CurrentPosition struct {
-			LocationID        string `json:"location_id"`
-			KnownTimestampSec string `json:"known_timestamp_sec"`
-		} `json:"current_position"`
-		Stops []Stop `json:"stops"`
-	} `json:"route_history"`
-	UpcomingCommitments map[string]interface{} `json:"upcoming_commitments"`
-	NumDHMTMembers      int                    `json:"num_dhmt_members"`
-	NumAppMembers       int                    `json:"num_app_members"`
-}
-
-type Stop struct {
-	Visit                        *Visit     `json:"visit,omitempty"`
-	RestBreak                    *RestBreak `json:"rest_break,omitempty"`
-	Pinned                       bool       `json:"pinned"`
-	ActualStartTimestampSec      string     `json:"actual_start_timestamp_sec,omitempty"`
-	ActualCompletionTimestampSec string     `json:"actual_completion_timestamp_sec,omitempty"`
-}
-
-type Visit struct {
-	VisitID             string `json:"visit_id"`
-	ArrivalTimestampSec string `json:"arrival_timestamp_sec,omitempty"`
-}
-
-type RestBreak struct {
-	RestBreakID        string `json:"rest_break_id"`
-	StartTimestampSec  string `json:"start_timestamp_sec"`
-}
-
-func convertTimestamp(timestamp string) time.Time {
-	i, err := strconv.ParseInt(timestamp, 10, 64)
+func main() {
+	// Read the JSON file
+	data, err := ioutil.ReadFile("vrp.json")
 	if err != nil {
-		return time.Time{}
+		log.Fatalf("Error reading file: %v", err)
 	}
-	t := time.Unix(i, 0)
-	
+
+	// Parse the JSON data
+	var problem Problem
+	err = json.Unmarshal(data, &problem)
+	if err != nil {
+		log.Fatalf("Error parsing JSON: %v", err)
+	}
+
+	// Load Mountain Time location
 	mountainTime, err := time.LoadLocation("America/Denver")
 	if err != nil {
-		return time.Time{}
-	}
-	
-	return t.In(mountainTime)
-}
-
-func formatTime(t time.Time) string {
-	return t.Format("15:04:05")
-}
-
-func generateTimeline(stops []Stop) string {
-	if len(stops) == 0 {
-		return "No stops in the timeline."
+		log.Fatalf("Error loading Mountain Time zone: %v", err)
 	}
 
-	// Sort stops by start time
-	sort.Slice(stops, func(i, j int) bool {
-		timeI := getStopTime(stops[i])
-		timeJ := getStopTime(stops[j])
-		return timeI.Before(timeJ)
+	// Create a map of visit IDs to their arrival time windows
+	visitWindows := make(map[string]struct {
+		Start string
+		End   string
 	})
-
-	startTime := getStopTime(stops[0])
-	endTime := getStopTime(stops[len(stops)-1])
-	duration := endTime.Sub(startTime)
-
-	timelineWidth := 80
-	var timeline strings.Builder
-
-	for _, stop := range stops {
-		stopTime := getStopTime(stop)
-		relativePosition := float64(stopTime.Sub(startTime)) / float64(duration)
-		position := int(relativePosition * float64(timelineWidth))
-
-		timeline.WriteString(fmt.Sprintf("%s%s\n", strings.Repeat(" ", position), getStopMarker(stop)))
-		timeline.WriteString(fmt.Sprintf("%s|\n", strings.Repeat(" ", position)))
-	}
-
-	// Add time labels
-	timeline.WriteString(fmt.Sprintf("%-*s%s\n", timelineWidth, formatTime(startTime), formatTime(endTime)))
-
-	return timeline.String()
-}
-
-func getStopTime(stop Stop) time.Time {
-	if stop.Visit != nil && stop.Visit.ArrivalTimestampSec != "" {
-		return convertTimestamp(stop.Visit.ArrivalTimestampSec)
-	} else if stop.RestBreak != nil {
-		return convertTimestamp(stop.RestBreak.StartTimestampSec)
-	}
-	return time.Time{}
-}
-
-func getStopMarker(stop Stop) string {
-	if stop.Visit != nil {
-		return fmt.Sprintf("V%s", stop.Visit.VisitID)
-	} else if stop.RestBreak != nil {
-		return fmt.Sprintf("B%s", stop.RestBreak.RestBreakID)
-	}
-	return "?"
-}
-
-func main() {
-	// ... (file opening and JSON decoding remain the same)
-
-	for _, team := range vrp.Problem.Description.ShiftTeams {
-		fmt.Printf("Shift Team ID: %s\n", team.ID)
-		fmt.Printf("Depot Location ID: %s\n", team.DepotLocationID)
-		fmt.Printf("Available Time Window: %s - %s\n",
-			formatTime(convertTimestamp(team.AvailableTimeWindow.StartTimestampSec)),
-			formatTime(convertTimestamp(team.AvailableTimeWindow.EndTimestampSec)))
-		
-		fmt.Printf("Current Position: Location ID %s, Known Time %s\n",
-			team.RouteHistory.CurrentPosition.LocationID,
-			formatTime(convertTimestamp(team.RouteHistory.CurrentPosition.KnownTimestampSec)))
-		
-		fmt.Println("\nRoute History Timeline:")
-		fmt.Println(generateTimeline(team.RouteHistory.Stops))
-		
-		fmt.Println("\nDetailed Route History:")
-		for i, stop := range team.RouteHistory.Stops {
-			fmt.Printf("  Stop %d:\n", i+1)
-			if stop.Visit != nil {
-				fmt.Printf("    Visit ID: %s\n", stop.Visit.VisitID)
-				if stop.Visit.ArrivalTimestampSec != "" {
-					fmt.Printf("    Arrival Time: %s\n", formatTime(convertTimestamp(stop.Visit.ArrivalTimestampSec)))
-				}
-			} else if stop.RestBreak != nil {
-				fmt.Printf("    Rest Break ID: %s\n", stop.RestBreak.RestBreakID)
-				fmt.Printf("    Start Time: %s\n", formatTime(convertTimestamp(stop.RestBreak.StartTimestampSec)))
-			}
-			fmt.Printf("    Pinned: %v\n", stop.Pinned)
-			if stop.ActualStartTimestampSec != "" {
-				fmt.Printf("    Actual Start: %s\n", formatTime(convertTimestamp(stop.ActualStartTimestampSec)))
-			}
-			if stop.ActualCompletionTimestampSec != "" {
-				fmt.Printf("    Actual Completion: %s\n", formatTime(convertTimestamp(stop.ActualCompletionTimestampSec)))
-			}
+	for _, visit := range problem.Problem.Description.Visits {
+		visitWindows[visit.ID] = struct {
+			Start string
+			End   string
+		}{
+			Start: formatTimestamp(visit.ArrivalTimeWindow.StartTimestampSec, mountainTime),
+			End:   formatTimestamp(visit.ArrivalTimeWindow.EndTimestampSec, mountainTime),
 		}
+	}
+
+	// Create a map of break IDs to their details
+	breakDetails := make(map[string]struct {
+		Duration string
+		Start    string
+	})
+	for _, restBreak := range problem.Problem.Description.RestBreaks {
+		duration, _ := strconv.Atoi(restBreak.DurationSec)
+		breakDetails[restBreak.ID] = struct {
+			Duration string
+			Start    string
+		}{
+			Duration: formatDuration(duration),
+			Start:    formatTimestamp(restBreak.StartTimestampSec, mountainTime),
+		}
+	}
+
+	// Process each shift team
+	for _, team := range problem.Problem.Description.ShiftTeams {
+		fmt.Printf("Shift Team ID: %s\n", team.ID)
 		
-		fmt.Printf("Number of DHMT Members: %d\n", team.NumDHMTMembers)
-		fmt.Printf("Number of App Members: %d\n", team.NumAppMembers)
+		// Print shift team start and end times
+		shiftStart := formatTimestamp(team.AvailableTimeWindow.StartTimestampSec, mountainTime)
+		shiftEnd := formatTimestamp(team.AvailableTimeWindow.EndTimestampSec, mountainTime)
+		fmt.Printf("Shift Start Time: %s\n", shiftStart)
+		fmt.Printf("Shift End Time: %s\n", shiftEnd)
+		
+		for _, stop := range team.RouteHistory.Stops {
+			if stop.Visit.VisitID != "" {
+				fmt.Printf("  Visit ID: %s\n", stop.Visit.VisitID)
+				if window, exists := visitWindows[stop.Visit.VisitID]; exists {
+					fmt.Printf("    Arrival Window Start: %s\n", window.Start)
+					fmt.Printf("    Arrival Window End: %s\n", window.End)
+				}
+			} else if stop.RestBreak.RestBreakID != "" {
+				fmt.Printf("  Break ID: %s\n", stop.RestBreak.RestBreakID)
+				if details, exists := breakDetails[stop.RestBreak.RestBreakID]; exists {
+					fmt.Printf("    Scheduled Start: %s\n", details.Start)
+					fmt.Printf("    Duration: %s\n", details.Duration)
+				}
+			} else {
+				fmt.Printf("  Unknown Stop Type\n")
+			}
+
+			startTime := formatTimestamp(stop.ActualStartTimestampSec, mountainTime)
+			endTime := formatTimestamp(stop.ActualCompletionTimestampSec, mountainTime)
+			fmt.Printf("    Actual Start Time: %s\n", startTime)
+			fmt.Printf("    Actual End Time: %s\n", endTime)
+		}
 		fmt.Println()
 	}
+}
+
+func formatTimestamp(timestamp string, loc *time.Location) string {
+	if timestamp == "" {
+		return "Not available"
+	}
+	
+	i, err := strconv.ParseInt(timestamp, 10, 64)
+	if err != nil {
+		return "Invalid timestamp"
+	}
+	
+	t := time.Unix(i, 0).In(loc)
+	return t.Format("2006-01-02 03:04:05 PM MST")
+}
+
+func formatDuration(seconds int) string {
+	duration := time.Duration(seconds) * time.Second
+	hours := int(duration.Hours())
+	minutes := int(duration.Minutes()) % 60
+	return fmt.Sprintf("%dh %dm", hours, minutes)
 }
