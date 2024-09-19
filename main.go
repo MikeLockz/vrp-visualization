@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"os"
 	"strconv"
 	"time"
 )
@@ -68,7 +67,7 @@ type Stop struct {
 
 func main() {
 	// Read the JSON file
-	data, err := ioutil.ReadFile("paste.txt")
+	data, err := ioutil.ReadFile("vrp.json")
 	if err != nil {
 		log.Fatalf("Error reading file: %v", err)
 	}
@@ -85,13 +84,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error loading Mountain Time zone: %v", err)
 	}
-
-	// Create output file
-	outputFile, err := os.Create("output.txt")
-	if err != nil {
-		log.Fatalf("Error creating output file: %v", err)
-	}
-	defer outputFile.Close()
 
 	// Create a map of visit IDs to their arrival time windows
 	visitWindows := make(map[string]struct {
@@ -126,43 +118,6 @@ func main() {
 
 	// Process each shift team
 	for _, team := range problem.Problem.Description.ShiftTeams {
-		writeLine(outputFile, "Shift Team ID: %s", team.ID)
-		
-		// Write shift team start and end times
-		shiftStart := formatTimestamp(team.AvailableTimeWindow.StartTimestampSec, mountainTime)
-		shiftEnd := formatTimestamp(team.AvailableTimeWindow.EndTimestampSec, mountainTime)
-		writeLine(outputFile, "Shift Start Time: %s", shiftStart)
-		writeLine(outputFile, "Shift End Time: %s", shiftEnd)
-		
-		for _, stop := range team.RouteHistory.Stops {
-			if stop.Visit.VisitID != "" {
-				writeLine(outputFile, "  Visit ID: %s", stop.Visit.VisitID)
-				if window, exists := visitWindows[stop.Visit.VisitID]; exists {
-					writeLine(outputFile, "    Arrival Window Start: %s", window.Start)
-					writeLine(outputFile, "    Arrival Window End: %s", window.End)
-				}
-			} else if stop.RestBreak.RestBreakID != "" {
-				writeLine(outputFile, "  Break ID: %s", stop.RestBreak.RestBreakID)
-				if details, exists := breakDetails[stop.RestBreak.RestBreakID]; exists {
-					writeLine(outputFile, "    Scheduled Start: %s", details.Start)
-					writeLine(outputFile, "    Duration: %s", details.Duration)
-				}
-			} else {
-				writeLine(outputFile, "  Unknown Stop Type")
-			}
-
-			startTime := formatTimestamp(stop.ActualStartTimestampSec, mountainTime)
-			endTime := formatTimestamp(stop.ActualCompletionTimestampSec, mountainTime)
-			writeLine(outputFile, "    Actual Start Time: %s", startTime)
-			writeLine(outputFile, "    Actual End Time: %s", endTime)
-		}
-		writeLine(outputFile, "")
-	}
-	
-
-	fmt.Println("Output has been written to output.txt")
-
-		for _, team := range problem.Problem.Description.ShiftTeams {
 		fmt.Printf("Shift Team ID: %s\n", team.ID)
 		
 		shiftStart, _ := strconv.ParseInt(team.AvailableTimeWindow.StartTimestampSec, 10, 64)
@@ -189,6 +144,8 @@ func main() {
 						stopInfo.WindowEnd, _ = strconv.ParseInt(problem.Problem.Description.Visits[visitIndex].ArrivalTimeWindow.EndTimestampSec, 10, 64)
 					}
 				}
+				stopInfo.ActualStart, _ = strconv.ParseInt(stop.ActualStartTimestampSec, 10, 64)
+				stopInfo.ActualEnd, _ = strconv.ParseInt(stop.ActualCompletionTimestampSec, 10, 64)
 			} else if stop.RestBreak.RestBreakID != "" {
 				fmt.Printf("  Break ID: %s\n", stop.RestBreak.RestBreakID)
 				stopInfo.ID = stop.RestBreak.RestBreakID
@@ -201,6 +158,10 @@ func main() {
 						stopInfo.WindowStart, _ = strconv.ParseInt(problem.Problem.Description.RestBreaks[breakIndex].StartTimestampSec, 10, 64)
 						duration, _ := strconv.ParseInt(problem.Problem.Description.RestBreaks[breakIndex].DurationSec, 10, 64)
 						stopInfo.WindowEnd = stopInfo.WindowStart + duration
+						
+						// For breaks, set ActualStart and ActualEnd to be the same as WindowStart and WindowEnd
+						stopInfo.ActualStart = stopInfo.WindowStart
+						stopInfo.ActualEnd = stopInfo.WindowEnd
 					}
 				}
 			} else {
@@ -208,13 +169,10 @@ func main() {
 				continue
 			}
 
-			startTime := formatTimestamp(stop.ActualStartTimestampSec, mountainTime)
-			endTime := formatTimestamp(stop.ActualCompletionTimestampSec, mountainTime)
+			startTime := formatTimestamp(strconv.FormatInt(stopInfo.ActualStart, 10), mountainTime)
+			endTime := formatTimestamp(strconv.FormatInt(stopInfo.ActualEnd, 10), mountainTime)
 			fmt.Printf("    Actual Start Time: %s\n", startTime)
 			fmt.Printf("    Actual End Time: %s\n", endTime)
-
-			stopInfo.ActualStart, _ = strconv.ParseInt(stop.ActualStartTimestampSec, 10, 64)
-			stopInfo.ActualEnd, _ = strconv.ParseInt(stop.ActualCompletionTimestampSec, 10, 64)
 
 			stops = append(stops, stopInfo)
 		}
@@ -231,12 +189,39 @@ func main() {
 			fmt.Printf("SVG timeline generated: timeline_%s.svg\n", team.ID)
 		}
 	}
-
 }
 
 func generateSVG(stops []Stop, shiftStart, shiftEnd int64, loc *time.Location) string {
-	svg := fmt.Sprintf(`<svg xmlns="http://www.w3.org/2000/svg" width="%d" height="%d">`, svgWidth, svgHeight)
-	svg += fmt.Sprintf(`<rect x="%d" y="%d" width="%d" height="%d" fill="none" stroke="black" />`, margin, margin, svgWidth-2*margin, svgHeight-2*margin)
+	svg := fmt.Sprintf(`<svg xmlns="http://www.w3.org/2000/svg" width="%d" height="%d">`, svgWidth, svgHeight+100)
+	
+	// Define styles
+	svg += `
+		<style>
+			.title { font: bold 24px 'Arial', sans-serif; fill: #333; }
+			.legend-text { font: 14px 'Arial', sans-serif; fill: #666; }
+			.axis-text { font: 12px 'Arial', sans-serif; fill: #999; }
+			.label-text { font: 12px 'Arial', sans-serif; fill: #333; }
+			.time-text { font: 10px 'Arial', sans-serif; fill: #666; }
+			.visit-box { fill: #4CAF50; opacity: 0.7; }
+			.break-box { fill: #FFC107; opacity: 0.7; }
+			.window-box { fill: none; stroke: #2196F3; stroke-width: 2; opacity: 0.5; }
+		</style>
+	`
+
+	// Add title
+	svg += fmt.Sprintf(`<text x="%d" y="40" class="title" text-anchor="middle">Shift Team Timeline</text>`, svgWidth/2)
+
+	// Add legend
+	legendY := 70
+	svg += fmt.Sprintf(`<rect x="10" y="%d" width="20" height="20" class="visit-box" rx="3" />`, legendY)
+	svg += fmt.Sprintf(`<text x="40" y="%d" class="legend-text" alignment-baseline="middle">Visit</text>`, legendY+10)
+	svg += fmt.Sprintf(`<rect x="100" y="%d" width="20" height="20" class="break-box" rx="3" />`, legendY)
+	svg += fmt.Sprintf(`<text x="130" y="%d" class="legend-text" alignment-baseline="middle">Break</text>`, legendY+10)
+	svg += fmt.Sprintf(`<rect x="190" y="%d" width="20" height="20" class="window-box" rx="3" />`, legendY)
+	svg += fmt.Sprintf(`<text x="220" y="%d" class="legend-text" alignment-baseline="middle">Arrival Window</text>`, legendY+10)
+
+	// Add background
+	svg += fmt.Sprintf(`<rect x="%d" y="%d" width="%d" height="%d" fill="#f8f9fa" rx="5" />`, margin-10, margin+90, svgWidth-2*margin+20, svgHeight-2*margin+20)
 
 	timeScale := float64(svgWidth-2*margin) / float64(shiftEnd-shiftStart)
 
@@ -248,36 +233,48 @@ func generateSVG(stops []Stop, shiftStart, shiftEnd int64, loc *time.Location) s
 			break
 		}
 		x := margin + int(float64(timePoint.Unix()-shiftStart)*timeScale)
-		svg += fmt.Sprintf(`<line x1="%d" y1="%d" x2="%d" y2="%d" stroke="gray" stroke-dasharray="2,2" />`, x, margin, x, svgHeight-margin)
-		svg += fmt.Sprintf(`<text x="%d" y="%d" font-size="12" text-anchor="middle">%s</text>`, x, svgHeight-margin+20, timePoint.Format("3:04"))
+		svg += fmt.Sprintf(`<line x1="%d" y1="%d" x2="%d" y2="%d" stroke="#e9ecef" stroke-width="1" />`, x, margin+100, x, svgHeight+80)
+		svg += fmt.Sprintf(`<text x="%d" y="%d" class="axis-text" text-anchor="middle">%s</text>`, x, svgHeight+95, timePoint.Format("15:04"))
 	}
 
-	yOffset := margin + 30
-	for _, stop := range stops {
+	yOffset := margin + 120
+	for i, stop := range stops {
 		windowStartX := margin + int(float64(stop.WindowStart-shiftStart)*timeScale)
 		windowEndX := margin + int(float64(stop.WindowEnd-shiftStart)*timeScale)
 		actualStartX := margin + int(float64(stop.ActualStart-shiftStart)*timeScale)
 		actualEndX := margin + int(float64(stop.ActualEnd-shiftStart)*timeScale)
 
-		// Draw arrival window
-		svg += fmt.Sprintf(`<rect x="%d" y="%d" width="%d" height="20" fill="none" stroke="blue" />`, windowStartX, yOffset, windowEndX-windowStartX)
+		// Alternating row background
+		if i%2 == 0 {
+			svg += fmt.Sprintf(`<rect x="%d" y="%d" width="%d" height="40" fill="#f1f3f5" rx="3" />`, margin-10, yOffset-10, svgWidth-2*margin+20)
+		}
 
-		// Draw actual time
-		svg += fmt.Sprintf(`<rect x="%d" y="%d" width="%d" height="20" fill="%s" />`, actualStartX, yOffset, actualEndX-actualStartX, getColor(stop.Type))
+		if stop.Type == "break" {
+			svg += fmt.Sprintf(`<rect x="%d" y="%d" width="%d" height="20" class="break-box" rx="3" />`, actualStartX, yOffset, actualEndX-actualStartX)
+		} else {
+			svg += fmt.Sprintf(`<rect x="%d" y="%d" width="%d" height="20" class="window-box" rx="3" />`, windowStartX, yOffset, windowEndX-windowStartX)
+			svg += fmt.Sprintf(`<rect x="%d" y="%d" width="%d" height="20" class="visit-box" rx="3" />`, actualStartX, yOffset, actualEndX-actualStartX)
+		}
 
 		// Add label
-		svg += fmt.Sprintf(`<text x="%d" y="%d" font-size="12" fill="black">%s (%s)</text>`, actualStartX, yOffset-5, stop.ID, stop.Type)
+		svg += fmt.Sprintf(`<text x="%d" y="%d" class="label-text">%s (%s)</text>`, actualStartX+5, yOffset-5, stop.ID, stop.Type)
 
 		// Add time labels
-		windowStartTime := time.Unix(stop.WindowStart, 0).In(loc).Format("3:04")
-		windowEndTime := time.Unix(stop.WindowEnd, 0).In(loc).Format("3:04")
-		actualStartTime := time.Unix(stop.ActualStart, 0).In(loc).Format("3:04")
-		actualEndTime := time.Unix(stop.ActualEnd, 0).In(loc).Format("3:04")
-
-		svg += fmt.Sprintf(`<text x="%d" y="%d" font-size="10" fill="blue">%s</text>`, windowStartX, yOffset+30, windowStartTime)
-		svg += fmt.Sprintf(`<text x="%d" y="%d" font-size="10" fill="blue" text-anchor="end">%s</text>`, windowEndX, yOffset+30, windowEndTime)
-		svg += fmt.Sprintf(`<text x="%d" y="%d" font-size="10" fill="black">%s</text>`, actualStartX, yOffset+15, actualStartTime)
-		svg += fmt.Sprintf(`<text x="%d" y="%d" font-size="10" fill="black" text-anchor="end">%s</text>`, actualEndX, yOffset+15, actualEndTime)
+		if stop.Type == "break" {
+			actualStartTime := time.Unix(stop.ActualStart, 0).In(loc).Format("15:04")
+			actualEndTime := time.Unix(stop.ActualEnd, 0).In(loc).Format("15:04")
+			svg += fmt.Sprintf(`<text x="%d" y="%d" class="time-text" text-anchor="end">%s</text>`, actualStartX-5, yOffset+15, actualStartTime)
+			svg += fmt.Sprintf(`<text x="%d" y="%d" class="time-text">%s</text>`, actualEndX+5, yOffset+15, actualEndTime)
+		} else {
+			windowStartTime := time.Unix(stop.WindowStart, 0).In(loc).Format("15:04")
+			windowEndTime := time.Unix(stop.WindowEnd, 0).In(loc).Format("15:04")
+			actualStartTime := time.Unix(stop.ActualStart, 0).In(loc).Format("15:04")
+			actualEndTime := time.Unix(stop.ActualEnd, 0).In(loc).Format("15:04")
+			svg += fmt.Sprintf(`<text x="%d" y="%d" class="time-text" text-anchor="end">%s</text>`, windowStartX-5, yOffset+30, windowStartTime)
+			svg += fmt.Sprintf(`<text x="%d" y="%d" class="time-text">%s</text>`, windowEndX+5, yOffset+30, windowEndTime)
+			svg += fmt.Sprintf(`<text x="%d" y="%d" class="time-text" text-anchor="end">%s</text>`, actualStartX-5, yOffset+15, actualStartTime)
+			svg += fmt.Sprintf(`<text x="%d" y="%d" class="time-text">%s</text>`, actualEndX+5, yOffset+15, actualEndTime)
+		}
 
 		yOffset += 50
 	}
@@ -285,7 +282,6 @@ func generateSVG(stops []Stop, shiftStart, shiftEnd int64, loc *time.Location) s
 	svg += "</svg>"
 	return svg
 }
-
 
 func getColor(stopType string) string {
 	if stopType == "visit" {
@@ -344,9 +340,4 @@ func formatDuration(seconds int) string {
 	hours := int(duration.Hours())
 	minutes := int(duration.Minutes()) % 60
 	return fmt.Sprintf("%dh %dm", hours, minutes)
-}
-
-func writeLine(file *os.File, format string, a ...interface{}) {
-	line := fmt.Sprintf(format, a...)
-	file.WriteString(line + "\n")
 }
