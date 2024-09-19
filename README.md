@@ -1,6 +1,6 @@
-# VRP Visualization
+# VRP Snapshot Visualization
 
-![VRP timeline](./timeline_3991898.svg)
+![VRP Snapshot timeline](./timeline_3991898.svg)
 
 TODO:
 - add all visit time windows
