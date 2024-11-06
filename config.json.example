@@ -1,0 +1,5 @@
+{
+  "email": "email@dispatchhealth.com",
+  "token": "get token from your atlassian account > Security > API Tokens",
+  "url": "https://dispatchhealth.atlassian.net"
+}

@@ -1,9 +1,16 @@
-# VRP Snapshot Visualization
+# Jira Reporting
 
-![VRP Snapshot timeline](./timeline_3991898.svg)
+![VRP Snapshot timeline](./label_distribution.png)
 
-TODO:
-- add all visit time windows
-- change color of pinned stops
-- add on service_duration_sec + extra_setup_duration_sec to visits without stop
-- handle multiple shift teams
+```bash
+pip install pandas plotly matlib seaborn numpy
+```
+
+## Configure
+Rename `config.json.example` -> `config.json`
+Edit the file with your credentials.
+
+## Download and output visualizations
+```bash
+python run_all.py
+```
